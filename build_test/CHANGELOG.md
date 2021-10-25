@@ -1,3 +1,12 @@
+## 2.1.4
+
+- Update `pub run` references to `dart run`.
+- Drop package:pedantic dependency and replace it with package:lints.
+
+## 2.1.3
+
+- Use `allowedOutputs` in `TestBuilder` instead of computing them again.
+
 ## 2.1.2
 
 - Allow the latest `package:test_core`.

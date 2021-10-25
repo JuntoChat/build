@@ -10,6 +10,7 @@ import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/analysis/session.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/file_system/memory_file_system.dart';
 import 'package:build/build.dart';
 import 'package:build/experiments.dart';
 import 'package:build_resolvers/src/analysis_driver.dart';
@@ -434,7 +435,7 @@ int? get x => 1;
                     sdkLanguageVersion.major);
                 expect(lib.languageVersion.effective.minor,
                     sdkLanguageVersion.minor);
-                var errors = await lib.session.getErrors2('/a/web/main.dart')
+                var errors = await lib.session.getErrors('/a/web/main.dart')
                     as ErrorsResult;
                 expect(errors.errors, isEmpty);
               }, resolvers: AnalyzerResolvers()),
@@ -452,7 +453,7 @@ int? get x => 1;
         expect(await resolver.isLibrary(AssetId('a', 'web/other.dart')), true);
         var newLib =
             await resolver.libraryFor(await resolver.assetIdForElement(lib));
-        expect(await newLib.session.getResolvedLibraryByElement2(newLib),
+        expect(await newLib.session.getResolvedLibraryByElement(newLib),
             isA<ResolvedLibraryResult>());
       }, resolvers: resolvers);
     });
@@ -692,6 +693,29 @@ int? get x => 1;
     await runBuilder(builder, [input], reader, writer, resolvers);
   });
 
+  test('assets with extensions other than `.dart` are not considered libraries',
+      () async {
+    var writer = InMemoryAssetWriter();
+    var reader = InMemoryAssetReader.shareAssetCache(writer.assets);
+    var input = AssetId('a', 'lib/input.dart');
+    writer.assets[input] = utf8.encode('void doStuff() {}');
+
+    var otherFile = AssetId('a', 'lib/input.notdart');
+    writer.assets[otherFile] = utf8.encode('Not a Dart file');
+
+    var builder = TestBuilder(
+        buildExtensions: {
+          '.dart': ['.a.dart']
+        },
+        build: expectAsync2((buildStep, _) async {
+          var other = buildStep.inputId.changeExtension('.notdart');
+          expect(await buildStep.canRead(other), true);
+          expect(await buildStep.resolver.isLibrary(other), false);
+        }));
+    var resolvers = AnalyzerResolvers();
+    await runBuilder(builder, [input], reader, writer, resolvers);
+  });
+
   group('compilationUnitFor', () {
     test('can parse a given input', () {
       return resolveSources({
@@ -743,16 +767,17 @@ int? get x => 1;
       var resolvers = AnalyzerResolvers();
       await resolveSources({
         'a|web/main.dart': 'int x;',
-        'a|web/other.dart': '',
       }, (resolver) async {
         var lib = await resolver.libraryFor(entryPoint);
         var x = lib.topLevelElements.firstWhere((x) => !x.isSynthetic);
         expect(x.name, 'x');
-        expect(await resolver.isLibrary(AssetId('a', 'web/other.dart')), true);
+        (x.library!.session.resourceProvider as MemoryResourceProvider)
+            .modifyFile('/a/web/main.dart', 'int x = 1;');
 
         // Validate that direct session usage would throw
-        expect(() => lib.session.getParsedLibraryByElement2(x.library!),
-            throwsA(isA<InconsistentAnalysisException>()));
+        expect(() => lib.session.getParsedLibraryByElement(x.library!),
+            throwsA(isA<InconsistentAnalysisException>()),
+            skip: 'https://github.com/dart-lang/build/issues/3202');
 
         var astNode = await resolver.astNodeFor(x);
         expect(astNode, isA<VariableDeclaration>());
@@ -767,16 +792,17 @@ int? get x => 1;
       var resolvers = AnalyzerResolvers();
       await resolveSources({
         'a|web/main.dart': 'int x;',
-        'a|web/other.dart': '',
       }, (resolver) async {
         var lib = await resolver.libraryFor(entryPoint);
         var x = lib.topLevelElements.firstWhere((x) => !x.isSynthetic);
         expect(x.name, 'x');
-        expect(await resolver.isLibrary(AssetId('a', 'web/other.dart')), true);
+        (x.library!.session.resourceProvider as MemoryResourceProvider)
+            .modifyFile('/a/web/main.dart', 'int x = 1;');
 
         // Validate that direct session usage would throw
-        expect(() => lib.session.getParsedLibraryByElement2(x.library!),
-            throwsA(isA<InconsistentAnalysisException>()));
+        expect(() => lib.session.getParsedLibraryByElement(x.library!),
+            throwsA(isA<InconsistentAnalysisException>()),
+            skip: 'https://github.com/dart-lang/build/issues/3202');
 
         var astNode = await resolver.astNodeFor(x, resolve: true);
         expect(astNode, isA<VariableDeclaration>());
@@ -790,18 +816,19 @@ int? get x => 1;
       var resolvers = AnalyzerResolvers();
       await resolveSources({
         'a|web/main.dart': 'int x;',
-        'a|web/other.dart': '',
       }, (resolver) async {
         var lib = await resolver.libraryFor(entryPoint);
         var x = lib.topLevelElements.firstWhere((x) => !x.isSynthetic);
         expect(x.name, 'x');
         var originalResult = await lib.session
-            .getResolvedLibrary2(lib.source.fullName) as ResolvedLibraryResult;
-        expect(await resolver.isLibrary(AssetId('a', 'web/other.dart')), true);
+            .getResolvedLibrary(lib.source.fullName) as ResolvedLibraryResult;
+        (x.library!.session.resourceProvider as MemoryResourceProvider)
+            .modifyFile('/a/web/main.dart', 'int x = 1;');
 
         // Validate that direct session usage would throw
-        expect(() => lib.session.getResolvedLibrary2(lib.source.fullName),
-            throwsA(isA<InconsistentAnalysisException>()));
+        expect(() => lib.session.getResolvedLibrary(lib.source.fullName),
+            throwsA(isA<InconsistentAnalysisException>()),
+            skip: 'https://github.com/dart-lang/build/issues/3202');
 
         var astNode = originalResult.getElementDeclaration(x)!.node;
         expect(astNode, isA<VariableDeclaration>());

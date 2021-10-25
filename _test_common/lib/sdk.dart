@@ -5,6 +5,7 @@
 import 'dart:async';
 import 'dart:io';
 
+// ignore: implementation_imports
 import 'package:build_runner_core/src/util/constants.dart';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
@@ -24,13 +25,24 @@ Future<ProcessResult> pubGet(String package, {bool offline = true}) async {
 /// Runs the `pub` [command] on [package] with [args].
 Future<ProcessResult> runPub(String package, String command,
         {Iterable<String>? args}) =>
-    Process.run(pubBinary, [command, ...?args],
+    Process.run(
+        dartBinary,
+        [
+          if (command != 'run') 'pub', // `dart run` is the new `pub run`
+          command,
+          ...?args,
+        ],
         workingDirectory: p.join(d.sandbox, package));
 
 /// Starts the `pub` [command] on [package] with [args].
 Future<Process> startPub(String package, String command,
         {Iterable<String>? args}) =>
-    Process.start(pubBinary, [command, ...args ?? []],
+    Process.start(
+        dartBinary,
+        [
+          if (command != 'run') 'pub', // `dart run` is the new `pub run`,
+          command, ...?args
+        ],
         workingDirectory: p.join(d.sandbox, package));
 
 /// Runs the `dart` script [script] in [package] with [args].

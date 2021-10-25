@@ -1,5 +1,5 @@
 #!/bin/bash
-# Created with package:mono_repo v5.0.0
+# Created with package:mono_repo v5.0.3
 
 # Support built in commands on windows out of the box.
 # When it is a flutter repo (check the pubspec.yaml for "sdk: flutter")
@@ -76,20 +76,20 @@ for PKG in ${PKGS}; do
         dart analyze --fatal-infos || EXIT_CODE=$?
         ;;
       command_0)
-        echo 'pub run build_runner test -- -p chrome --test-randomize-ordering-seed=random'
-        pub run build_runner test -- -p chrome --test-randomize-ordering-seed=random || EXIT_CODE=$?
+        echo 'dart run build_runner test -- -p chrome --test-randomize-ordering-seed=random'
+        dart run build_runner test -- -p chrome --test-randomize-ordering-seed=random || EXIT_CODE=$?
         ;;
       command_1)
-        echo 'pub run build_runner test -- -p vm test/configurable_uri_test.dart --test-randomize-ordering-seed=random'
-        pub run build_runner test -- -p vm test/configurable_uri_test.dart --test-randomize-ordering-seed=random || EXIT_CODE=$?
+        echo 'dart run build_runner test -- -p vm test/configurable_uri_test.dart --test-randomize-ordering-seed=random'
+        dart run build_runner test -- -p vm test/configurable_uri_test.dart --test-randomize-ordering-seed=random || EXIT_CODE=$?
         ;;
       command_2)
-        echo 'pub run build_runner test -- -p chrome,vm --test-randomize-ordering-seed=random'
-        pub run build_runner test -- -p chrome,vm --test-randomize-ordering-seed=random || EXIT_CODE=$?
+        echo 'dart run build_runner test -- -p chrome,vm --test-randomize-ordering-seed=random'
+        dart run build_runner test -- -p chrome,vm --test-randomize-ordering-seed=random || EXIT_CODE=$?
         ;;
       command_3)
-        echo 'pub run build_runner test --define="build_web_compilers:entrypoint=compiler=dart2js" -- -p chrome --test-randomize-ordering-seed=random'
-        pub run build_runner test --define="build_web_compilers:entrypoint=compiler=dart2js" -- -p chrome --test-randomize-ordering-seed=random || EXIT_CODE=$?
+        echo 'dart run build_runner test --define="build_web_compilers:entrypoint=compiler=dart2js" -- -p chrome --test-randomize-ordering-seed=random'
+        dart run build_runner test --define="build_web_compilers:entrypoint=compiler=dart2js" -- -p chrome --test-randomize-ordering-seed=random || EXIT_CODE=$?
         ;;
       format)
         echo 'dart format --output=none --set-exit-if-changed .'

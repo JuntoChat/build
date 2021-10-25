@@ -10,7 +10,6 @@ import 'package:build/src/builder/build_step.dart';
 import 'package:build/src/builder/build_step_impl.dart';
 import 'package:build_resolvers/build_resolvers.dart';
 import 'package:build_test/build_test.dart';
-import 'package:pedantic/pedantic.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -27,13 +26,15 @@ void main() {
   group('with reader/writer stub', () {
     late AssetId primary;
     late BuildStepImpl buildStep;
+    late List<AssetId> outputs;
 
     setUp(() {
       var reader = StubAssetReader();
       var writer = StubAssetWriter();
       primary = makeAssetId();
-      buildStep = BuildStepImpl(
-          primary, [], reader, writer, AnalyzerResolvers(), resourceManager);
+      outputs = List.generate(5, (index) => makeAssetId());
+      buildStep = BuildStepImpl(primary, outputs, reader, writer,
+          AnalyzerResolvers(), resourceManager);
     });
 
     test('doesnt allow non-expected outputs', () {
@@ -42,6 +43,10 @@ void main() {
           throwsA(TypeMatcher<UnexpectedOutputException>()));
       expect(() => buildStep.writeAsBytes(id, [0]),
           throwsA(TypeMatcher<UnexpectedOutputException>()));
+    });
+
+    test('reports allowed outputs', () {
+      expect(buildStep.allowedOutputs, outputs);
     });
 
     test('fetchResource can fetch resources', () async {
@@ -201,7 +206,7 @@ void main() {
 }
 
 class SlowAssetWriter implements AssetWriter {
-  final _writeCompleter = Completer<Null>();
+  final _writeCompleter = Completer<void>();
 
   void finishWrite() {
     _writeCompleter.complete(null);

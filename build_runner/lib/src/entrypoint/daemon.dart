@@ -6,13 +6,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:build/experiments.dart';
 import 'package:build_daemon/constants.dart';
 import 'package:build_daemon/daemon.dart';
 import 'package:build_daemon/data/serializers.dart';
 import 'package:build_daemon/data/server_log.dart';
 import 'package:build_runner/src/daemon/constants.dart';
 import 'package:logging/logging.dart' hide Level;
-import 'package:pedantic/pedantic.dart';
 
 import '../daemon/asset_server.dart';
 import '../daemon/daemon_builder.dart';
@@ -31,9 +31,14 @@ class DaemonCommand extends WatchCommand {
   String get name => 'daemon';
 
   DaemonCommand() {
-    argParser.addOption(buildModeFlag,
-        help: 'Specify the build mode of the daemon, e.g. auto or manual.',
-        defaultsTo: 'BuildMode.Auto');
+    argParser
+      ..addOption(buildModeFlag,
+          help: 'Specify the build mode of the daemon, e.g. auto or manual.',
+          defaultsTo: 'BuildMode.Auto')
+      ..addFlag(logRequestsOption,
+          defaultsTo: false,
+          negatable: false,
+          help: 'Enables logging for each request to the server.');
   }
 
   @override
@@ -42,8 +47,13 @@ class DaemonCommand extends WatchCommand {
 
   @override
   Future<int> run() async {
-    var workingDirectory = Directory.current.path;
     var options = readOptions();
+    return withEnabledExperiments(
+        () => _run(options), options.enableExperiments);
+  }
+
+  Future<int> _run(DaemonOptions options) async {
+    var workingDirectory = Directory.current.path;
     var daemon = Daemon(workingDirectory);
     var requestedOptions = argResults!.arguments.toSet();
     if (!daemon.hasLock) {
@@ -89,7 +99,7 @@ $logEndMarker'''));
 
       // Forward server logs to daemon command STDIO.
       var logSub = builder.logs.listen((log) {
-        if (log.level > Level.INFO) {
+        if (log.level > Level.INFO || options.verbose) {
           var buffer = StringBuffer(log.message);
           if (log.error != null) buffer.writeln(log.error);
           if (log.stackTrace != null) buffer.writeln(log.stackTrace);
@@ -98,7 +108,8 @@ $logEndMarker'''));
           stdout.writeln(log.message);
         }
       });
-      var server = await AssetServer.run(builder, packageGraph.root.name);
+      var server =
+          await AssetServer.run(options, builder, packageGraph.root.name);
       File(assetServerPortFilePath(workingDirectory))
           .writeAsStringSync('${server.port}');
       unawaited(builder.buildScriptUpdated.then((_) async {

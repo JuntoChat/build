@@ -1,3 +1,22 @@
+## 2.2.0-dev
+
+- Allow reusing the values held by `Resource`s when the resource has a `dispose`
+  method. Previously the instances were discarded and recreated for every build
+  even if they had tried to clean up their own state.
+
+## 2.1.1
+
+- Throw an `ArgumentError` if an expected output matches the input.
+- Bump min sdk to 2.14.0.
+
+## 2.1.0
+
+- Expand the expressiveness of `buildExtensions` include capture groups,
+  enabling directory moves. For more information on this feature, see
+  [capture groups](https://github.com/dart-lang/build/blob/master/docs/writing_a_builder.md#capture-groups)
+- Add an `allowedOutputs` getter to `BuildStep`. It returns assets that may be
+  written in that step.
+
 ## 2.0.3
 
 - Allow analyzer version 2.x.x.
@@ -44,7 +63,7 @@
 ## 1.5.1
 
 - Expose a set of valid inputs in `InvalidInputException`.
-- `AssetReader` implementations are now expected to throw 
+- `AssetReader` implementations are now expected to throw
   `InvalidInputException`s when reading invalid inputs.
   The check has been removed from the build step implementation.
 

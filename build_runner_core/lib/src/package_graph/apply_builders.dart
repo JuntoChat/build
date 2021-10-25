@@ -5,6 +5,8 @@
 import 'dart:async';
 
 import 'package:build/build.dart';
+// TODO: Move `scopeLogSync` to package:build?
+// ignore: implementation_imports
 import 'package:build/src/builder/logging.dart';
 import 'package:build_config/build_config.dart';
 import 'package:graphs/graphs.dart';
@@ -202,7 +204,7 @@ class BuilderApplication {
     BuilderOptions? defaultDevOptions,
     BuilderOptions? defaultReleaseOptions,
   }) {
-    var phaseFactory = (PackageNode package, BuilderOptions options,
+    PostBuildPhase phaseFactory(PackageNode package, BuilderOptions options,
         InputSet targetSources, InputSet? generateFor, bool isReleaseBuild) {
       generateFor ??= defaultGenerateFor;
 
@@ -219,12 +221,14 @@ class BuilderApplication {
       final builder =
           _scopeLogSync(() => builderFactory(optionsWithDefaults), logger);
       if (builder == null) throw CannotBuildException();
+      _validatePostProcessBuilder(builder);
       var builderAction = PostBuildAction(builder, package.name,
           builderOptions: optionsWithDefaults,
           generateFor: generateFor,
           targetSources: targetSources);
       return PostBuildPhase([builderAction]);
-    };
+    }
+
     return BuilderApplication._(
         builderKey, [phaseFactory], toNoneByDefault(), true, []);
   }
@@ -408,5 +412,19 @@ void _validateBuilder(Builder builder) {
         '${builder.runtimeType}.buildExtensions',
         'Output extensions must not match any input extensions, but got '
             'the following overlapping output extensions: $matching');
+  }
+}
+
+void _validatePostProcessBuilder(PostProcessBuilder builder) {
+  // Regular builders may use `{{}}` to define a capture group in build
+  // extensions. We don't currently support this syntax for post process
+  // builders.
+  if (builder.inputExtensions.any((input) => input.contains('{{}}'))) {
+    throw ArgumentError(
+      '${builder.runtimeType}.buildInputs contains capture groups (`{{}}`), '
+      'which is not currently supported for post-process builders. \n'
+      'Try generalizing input extensions and manually skip uninteresting '
+      'assets in the `build()` method.',
+    );
   }
 }

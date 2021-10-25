@@ -14,8 +14,11 @@ import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/sdk/build_sdk_summary.dart';
 import 'package:analyzer/error/error.dart';
 import 'package:analyzer/file_system/physical_file_system.dart';
+// ignore: implementation_imports
 import 'package:analyzer/src/dart/analysis/driver.dart' show AnalysisDriver;
+// ignore: implementation_imports
 import 'package:analyzer/src/dart/analysis/experiments.dart';
+// ignore: implementation_imports
 import 'package:analyzer/src/generated/engine.dart'
     show AnalysisOptions, AnalysisOptionsImpl;
 import 'package:async/async.dart';
@@ -152,6 +155,7 @@ class AnalyzerResolver implements ReleasableResolver {
 
   @override
   Future<bool> isLibrary(AssetId assetId) async {
+    if (assetId.extension != '.dart') return false;
     var source = _driver.sourceFactory.forUri2(assetId.uri);
     if (source == null || !source.exists()) return false;
     var result = _driver.getFileSync2(assetPath(assetId)) as FileResult;
@@ -170,11 +174,11 @@ class AnalyzerResolver implements ReleasableResolver {
     var path = library.source.fullName;
 
     if (resolve) {
-      return (await session.getResolvedLibrary2(path) as ResolvedLibraryResult)
+      return (await session.getResolvedLibrary(path) as ResolvedLibraryResult)
           .getElementDeclaration(element)
           ?.node;
     } else {
-      return (session.getParsedLibrary2(path) as ParsedLibraryResult)
+      return (session.getParsedLibrary(path) as ParsedLibraryResult)
           .getElementDeclaration(element)
           ?.node;
     }
@@ -488,7 +492,7 @@ can try adding a constraint like the following to your pubspec to start
 diagnosing why you can't get the latest version:
 
 dev_dependencies:
-  analyzer: ^$latestAnalyzer 
+  analyzer: ^$latestAnalyzer
 ''');
     }
   } catch (_) {

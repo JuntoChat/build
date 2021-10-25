@@ -78,7 +78,7 @@ void main() {
     });
 
     test('waits for tearDown', () async {
-      var resolverDone = Completer<Null>();
+      var resolverDone = Completer<void>();
       var resolver = await resolveSource(r'''
         library example;
 
@@ -126,7 +126,7 @@ void main() {
       ''', (resolver) => resolver.findLibraryNotNull('example'),
           packageConfig: packageConfig, inputId: AssetId('a', 'invalid.dart'));
       var errors = await libExample.session
-          .getErrors2(libExample.source.fullName) as ErrorsResult;
+          .getErrors(libExample.source.fullName) as ErrorsResult;
       expect(
           errors.errors.map((e) => e.message),
           contains(contains(

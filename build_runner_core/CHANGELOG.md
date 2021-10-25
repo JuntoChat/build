@@ -1,4 +1,22 @@
-## 7.0.2-dev
+## 7.2.3-dev
+
+## 7.2.2
+
+- Fix a bug compilation bug on the 2.14 sdk.
+
+## 7.2.1
+
+- Drop package:pedantic dependency and replace it with package:lints.
+
+## 7.2.0
+
+- Deprecate the `pubBinary` variable.
+- Add a `dartBinary` variable to be used instead of `pubBinary`.
+- Update `pub run` references to `dart run`.
+
+## 7.1.0
+
+- Support capture groups, a feature introduced in `build`: `2.1.0`.
 
 ## 7.0.1
 

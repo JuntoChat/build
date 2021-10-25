@@ -15,9 +15,8 @@ import 'package:build_daemon/data/build_status.dart';
 import 'package:build_daemon/data/build_target.dart';
 import 'package:build_daemon/data/shutdown_notification.dart';
 import 'package:build_runner/src/daemon/constants.dart';
-import 'package:build_runner_core/src/util/constants.dart' show pubBinary;
+import 'package:build_runner_core/src/util/constants.dart' show dartBinary;
 import 'package:path/path.dart' as p;
-import 'package:pedantic/pedantic.dart';
 import 'package:test/test.dart';
 import 'package:test_descriptor/test_descriptor.dart' as d;
 
@@ -54,10 +53,17 @@ main() {
   print('hello');
 }'''),
       ]),
+      d.dir('lib', [
+        d.file('message.dart', '''
+const message = 'hello world';
+      '''),
+      ]),
       d.dir('web', [
         d.file('main.dart', '''
+import 'package:a/message.dart';
+
 main() {
-  print('hello world');
+  print(message);
 }'''),
       ]),
     ]).create();
@@ -84,7 +90,7 @@ main() {
     return BuildDaemonClient.connect(
         workspace(),
         [
-          pubBinary.toString(),
+          dartBinary,
           ...args,
         ],
         logHandler: (log) => printOnFailure('Client: ${log.message}'),
@@ -141,6 +147,20 @@ main() {
           ])
         ])
       ]).create();
+    });
+
+    test('supports --enable-experiment option', () async {
+      await _startDaemon(options: ['--enable-experiment=fake-experiment']);
+      var client =
+          await _startClient(options: ['--enable-experiment=fake-experiment'])
+            ..registerBuildTarget(webTarget)
+            ..startBuild();
+      clients.add(client);
+      await expectLater(
+          client.buildResults,
+          // TODO: Check for specific message about a bad experiment
+          emitsThrough((BuildResults b) =>
+              b.results.first.status == BuildStatus.failed));
     });
 
     test('does not shut down down on build script change when configured',
